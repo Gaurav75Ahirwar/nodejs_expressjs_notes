@@ -285,3 +285,45 @@ output.on("finish", () => console.log("Copy complete"));
 - Handle errors at every asynchronous boundary.
 
 Reference: [Node.js official documentation](https://nodejs.org/docs/latest/api/)
+
+## HTTP request/response cycle
+
+HTTP communication follows a simple pattern: the client sends a request, the server processes it, and the server sends one response back.
+
+### Request message
+
+- **URL/path**: identifies the resource, such as `/users/42`.
+- **Method**: describes the operation: `GET` reads, `POST` creates, `PUT` replaces, `PATCH` partially updates, and `DELETE` removes.
+- **Headers**: metadata such as `Content-Type`, `Authorization`, and accepted response formats.
+- **Body**: data sent mainly with `POST`, `PUT`, or `PATCH`; it is commonly JSON.
+
+### Response message
+
+- **Status code**: communicates the result, for example `200` (success), `201` (created), `400` (bad request), `401` (unauthenticated), `404` (not found), or `500` (server error).
+- **Headers**: describe the response, especially its format, such as `Content-Type: application/json`.
+- **Body**: contains the returned data or an error message.
+
+### Node.js flow
+
+1. `http.createServer()` receives `req` and `res`.
+2. The server checks `req.method`, `req.url`, headers, and possibly the request body.
+3. It sets the status and headers with `res.writeHead()` or `res.statusCode`.
+4. It sends the body and finishes the response with `res.end()`.
+
+```js
+const http = require("node:http");
+
+http
+  .createServer((req, res) => {
+    if (req.method === "GET" && req.url === "/api/status") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ online: true }));
+    }
+
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Route not found");
+  })
+  .listen(3000);
+```
+
+Important: send only one response for each request, and always end it. Once `res.end()` has been called, do not write more headers or body data. In real applications, middleware and route handlers in Express organize this same request/response cycle.
