@@ -327,3 +327,177 @@ http
 ```
 
 Important: send only one response for each request, and always end it. Once `res.end()` has been called, do not write more headers or body data. In real applications, middleware and route handlers in Express organize this same request/response cycle.
+
+## My Additions
+
+### Express.js
+
+- Express is not a built-in Node.js module. Install it in the project with:
+
+```bash
+npm install express
+```
+
+- In older npm versions, `--save` was used to add the dependency to `package.json` automatically:
+
+```bash
+npm install express --save
+```
+
+- Common Express app methods:
+
+```js
+app.get("/", (req, res) => {
+  res.status(200).send("Hello from Express");
+});
+
+app.post("/users", (req, res) => {
+  res.status(201).send("User created");
+});
+
+app.put("/users/:id", (req, res) => {
+  res.status(200).send("User updated");
+});
+
+app.delete("/users/:id", (req, res) => {
+  res.status(200).send("User deleted");
+});
+
+app.all("/api/*", (req, res) => {
+  res.status(404).send("Not found");
+});
+
+app.use((req, res, next) => {
+  console.log("Middleware running");
+  next();
+});
+
+app.listen(5000, () => {
+  console.log("Server running on port 5000");
+});
+```
+
+- `app.get()` handles GET requests.
+- `res.status().send()` sets the HTTP status and sends a response.
+- `app.post()`, `app.put()`, and `app.delete()` handle create, update, and delete operations.
+- `app.all()` matches all HTTP methods for a route.
+- `app.use()` is used for middleware and route mounting.
+- `app.listen()` starts the server and listens on a port.
+
+### Important notes from the Express app example
+
+- `app.use(express.static('./public'))` serves static files from a folder such as `public/` without writing a route for each file.
+  - This is used for CSS, JS, images, and front-end assets.
+  - The server does not need to regenerate those files for every request.
+
+- `app.use()` is middleware. It runs for incoming requests before routes are checked, so it is useful for logging, auth checks, and setting up static assets.
+
+```js
+app.use(express.static("./public"));
+```
+
+- `res.sendFile()` sends a specific file to the browser when a route is requested.
+  - This is useful when you want to return a particular HTML file manually.
+  - In the example app, it is used in a commented route for serving a page directly.
+
+```js
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "./navbar-app/index.html"));
+});
+```
+
+- Key difference:
+  - `express.static()` = serve many files from a folder automatically.
+  - `res.sendFile()` = send one specific file for a route.
+  - `app.use()` = add middleware or static file handling globally.
+
+- In this app, the static assets are loaded from the `public` folder, so the browser can fetch files like `styles.css` and `browser-app.js` without the server rewriting them every time.
+
+### API vs SSR (Server-Side Rendering)
+
+The two are different ways a server can respond to a browser or client request.
+
+#### 1) API
+
+An API returns data, usually in JSON format, so another application or frontend can use it.
+
+- Purpose: send data, not full HTML pages.
+- Response type: JSON (`res.json()`)
+- Common use: mobile apps, frontend frameworks, dashboards, integrations.
+- Example from this project:
+
+```js
+app.get("/", (req, res) => {
+  res.json(products);
+});
+```
+
+This is API-style because the server sends raw data like:
+
+```json
+[
+  { "id": 1, "name": "product" },
+  { "id": 2, "name": "another product" }
+]
+```
+
+Important points:
+
+- `res.json()` sends a JSON response instead of HTML.
+- The client (browser app, React app, Postman, etc.) decides how to display it.
+- APIs are usually stateless and focused on data exchange.
+- They are ideal for backend services, CRUD operations, and app-to-app communication.
+
+#### 2) SSR (Server-Side Rendering)
+
+SSR means the server generates the HTML page on the server and sends the complete page to the browser.
+
+- Purpose: render a full page for the user.
+- Response type: HTML template or page.
+- Common use: traditional websites, forms, dashboards, pages that need server-rendered HTML.
+- Express example:
+
+```js
+app.get("/", (req, res) => {
+  res.render("home", { products });
+});
+```
+
+This is SSR-style because the server uses a template and sends a finished page to the browser, instead of sending only JSON.
+
+Important points:
+
+- `res.render()` usually works with a template engine like EJS or Pug.
+- The server fills data into the template before sending the HTML.
+- The browser receives a complete page, not raw data.
+- SSR is useful when the page needs to be displayed immediately and is often linked to SEO or server-generated content.
+
+#### Side-by-side comparison
+
+- API:
+  - returns JSON
+  - uses `res.json()`
+  - best for data exchange
+  - frontend app decides how to render
+
+- SSR:
+  - returns HTML page
+  - uses `res.render()`
+  - best for full pages and traditional websites
+  - server prepares the page before sending it
+
+#### In this repository
+
+The project structure shows both ideas in practice:
+
+- `node-express-course/02-express-tutorial/app.js` is an API-style example because it responds with `res.json(products)`.
+- The `public/` and `navbar-app/` folders contain HTML, CSS, and browser JavaScript files, which are used for browser-facing pages.
+- `res.sendFile()` and static assets are also part of the same Express workflow when serving pages or front-end files.
+
+So, in simple terms:
+
+- If you send data, it is an API.
+- If you send a ready-made page, it is SSR.
+- In real projects, apps often use both together: an API for data and an SSR page for the UI.
+
+This is the key idea behind modern web apps: the backend can serve JSON for frontend frameworks, while server-rendered pages still exist for traditional web applications.
