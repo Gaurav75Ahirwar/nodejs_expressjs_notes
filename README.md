@@ -249,6 +249,191 @@ orderEvents.emit("created", { id: 42 });
 
 Register listeners with `.on()` before calling `.emit()`. Use `.once()` for a listener that should run only once, and remove long-lived listeners when their owner is disposed to avoid memory leaks. Many Node APIs, including servers and streams, are event emitters.
 
+## 8. Middleware in Express
+
+Middleware functions are functions that run in the middle of a request-response cycle. In Express, each middleware gets access to the request object (`req`), the response object (`res`), and the `next()` function, which passes control to the next middleware or route handler.
+
+```js
+const logger = (req, res, next) => {
+  const method = req.method;
+  const url = req.url;
+  const time = new Date().getFullYear();
+  console.log(method, url, time);
+  next();
+};
+
+app.get('/', logger, (req, res) => {
+  res.send('Home');
+});
+```
+
+Important pointers:
+
+- Middleware executes during the request, before the final response is sent.
+- A middleware function has access to `req` and `res`, so it can inspect incoming values, modify data, or block the request.
+- Middleware can call `next()` to continue to the next function.
+- If a middleware sends a response itself, it should not call `next()` afterward.
+- Middleware is useful for logging, authentication, validation, authorization, and request preprocessing.
+
+### Middleware flow
+
+The general flow looks like this:
+
+```txt
+req => middleware => middleware => route handler => res
+```
+
+This is exactly the idea used in the project files:
+
+```js
+app.use([logger, authorize]);
+```
+
+Here both middleware functions run before the route handler for matching requests.
+
+### Authentication / authorization example
+
+```js
+const authorize = (req, res, next) => {
+  const { user } = req.query;
+
+  if (user === 'john') {
+    req.user = { name: 'john', id: 3 };
+    next();
+  } else {
+    res.status(401).send('<h1>Unauthorized</h1>');
+  }
+};
+```
+
+Important pointers:
+
+- Middleware can inspect query parameters from `req.query`.
+- It may attach extra values to `req`, such as `req.user`.
+- If the user is not allowed, middleware can stop the request by sending a response.
+- This is a common pattern for login checks and role-based access.
+
+### Why middleware is important
+
+Middleware helps keep code organized and reusable. Instead of repeating login checks or logging logic in every route, you can define one middleware function and apply it to multiple routes.
+
+This project demonstrates the pattern clearly:
+
+- `logger.js` logs the method, URL, and time.
+- `authorize.js` checks the request query and allows or denies access.
+- `app.js` uses `app.use([logger, authorize])` so those checks run automatically before route logic.
+
+## 9. Express route params and query strings
+
+Express makes it easy to read values from the URL and use them in request handlers.
+
+### Route params
+
+Route params are dynamic values in the URL path. They are defined with `:` in the route, and Express stores them in `req.params`.
+
+```js
+app.get("/api/products/:productID", (req, res) => {
+  const { productID } = req.params;
+  const singleProduct = products.find(
+    (product) => product.id === Number(productID),
+  );
+
+  if (!singleProduct) {
+    return res.status(404).send("<h1>Product not found!</h1>");
+  }
+
+  return res.json(singleProduct);
+});
+```
+
+Important points:
+
+- `:productID` is a placeholder for a value in the URL.
+- Express matches the value and puts it inside `req.params`.
+- Route params are used for identifying a specific resource, such as a product, user, or post.
+- `req.params` is an object, so access values like `req.params.productID`.
+- In real apps, you often convert params to numbers or IDs before comparing them.
+
+Example URL:
+
+```txt
+/api/products/3
+```
+
+This makes `req.params.productID === '3'` (a string), so you may need to convert it before comparing with numeric IDs.
+
+### Nested route params
+
+You can also have multiple dynamic segments in one route:
+
+```js
+app.get("/api/products/:productID/reviews/:reviewID", (req, res) => {
+  console.log(req.params);
+  res.send("hello world!");
+});
+```
+
+This is useful when you need to access related resources, like a product review for a specific product.
+
+### Query strings
+
+Query strings are used for optional filtering, sorting, pagination, or searching. They appear after `?` in the URL and are stored in `req.query`.
+
+```js
+app.get("/api/v1/query", (req, res) => {
+  const { search, limit } = req.query;
+  let sortedProducts = [...products];
+
+  if (search) {
+    sortedProducts = sortedProducts.filter((product) => {
+      return product.name.startsWith(search);
+    });
+  }
+
+  if (limit) {
+    sortedProducts = sortedProducts.slice(0, Number(limit));
+  }
+
+  if (sortedProducts.length < 1) {
+    return res.status(200).json({ success: true, data: [] });
+  }
+
+  res.status(200).json(sortedProducts);
+});
+```
+
+Important points:
+
+- Query string data is small and optional.
+- It is used for things like `?search=shirt&limit=2`.
+- Express stores it in `req.query`.
+- Values usually come in as strings, so conversion may be needed for numbers.
+- Query strings are ideal for filters and pagination, not for sending large or sensitive payloads.
+
+Example URL:
+
+```txt
+/api/v1/query?search=a&limit=2
+```
+
+This sends small additional data without changing the route itself.
+
+### Route params vs query strings
+
+- Route params are part of the URL path and identify a specific resource.
+- Query strings are extra options appended to the URL for filtering or search.
+- Use route params for required resource identity.
+- Use query strings for optional conditions and small data.
+
+Typical examples:
+
+```txt
+/api/products/5          -> route param
+/api/v1/query?search=watch&limit=3 -> query string
+```
+
+These two patterns are central to Express routes because they let the server read client input in a clean and predictable way.
+
 ## 8. Streams
 
 Streams process data in small chunks instead of loading an entire resource into memory. This makes them the right choice for large files, uploads, downloads, and transformed data. A stream also supports backpressure: the producer can slow down when the consumer cannot keep up.
