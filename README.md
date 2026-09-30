@@ -323,7 +323,7 @@ This project demonstrates the pattern clearly:
 - `authorize.js` checks the request query and allows or denies access.
 - `app.js` uses `app.use([logger, authorize])` so those checks run automatically before route logic.
 
-## Express GET, POST, PUT, and DELETE requests
+## Express GET, POST, PUT, DELETE, and router requests
 
 ### GET: read data
 
@@ -356,6 +356,13 @@ The [methods tutorial app](node-express-course/02-express-tutorial/app.js) decla
 - The tutorial removes data from an in-memory array only; a real database-backed DELETE handler should delete the record in the database and handle a missing record similarly.
 
 To test the completed example in Postman, run `node final/11-methods.js` from `node-express-course/02-express-tutorial` and send `DELETE http://localhost:5000/api/people/1`. No request body is needed.
+
+### Express routers and controllers
+
+- `express.Router()` creates a modular router for a group of related routes. The app mounts it with a prefix, for example `app.use('/api/people', people)` in [12-router-app.js](node-express-course/02-express-tutorial/final/12-router-app.js).
+- The [people router](node-express-course/02-express-tutorial/final/13-router-people.js) maps HTTP methods and local paths to handlers. Mount prefix plus router path form the full URL: `'/api/people'` + `'/:id'` becomes `/api/people/:id`.
+- Controllers hold the handler logic that reads `req`, performs the operation, and sends a response. The [controller example](node-express-course/02-express-tutorial/final/15-router-controller.js) exports handler functions for the router to import and call.
+- Register shared middleware such as body parsers before mounting routes, so controllers receive parsed request data in `req.body`.
 
 ### Middleware and request bodies
 
@@ -738,3 +745,5 @@ So, in simple terms:
 - In real projects, apps often use both together: an API for data and an SSR page for the UI.
 
 This is the key idea behind modern web apps: the backend can serve JSON for frontend frameworks, while server-rendered pages still exist for traditional web applications.
+
+ū
