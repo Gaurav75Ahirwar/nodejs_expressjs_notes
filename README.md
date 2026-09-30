@@ -323,7 +323,7 @@ This project demonstrates the pattern clearly:
 - `authorize.js` checks the request query and allows or denies access.
 - `app.js` uses `app.use([logger, authorize])` so those checks run automatically before route logic.
 
-## Express GET, POST, and PUT requests
+## Express GET, POST, PUT, and DELETE requests
 
 ### GET: read data
 
@@ -345,6 +345,17 @@ The [methods tutorial app](node-express-course/02-express-tutorial/app.js) defin
 - This example changes only the `name` field and operates on the in-memory `people` array, so it is not a persistent database update. It also does not currently reject a missing `name`; production routes should validate required fields before updating.
 
 To try it in Postman, send `PUT http://localhost:5000/api/people/1`, choose Body > raw > JSON, and provide `{ "name": "Ada Lovelace" }`. The response should contain the updated people list. In HTTP APIs, PUT commonly represents replacing a resource; this tutorial route demonstrates updating a selected field instead.
+
+### DELETE: remove an existing resource
+
+The [methods tutorial app](node-express-course/02-express-tutorial/app.js) declares `DELETE /api/people/:id`, but its handler currently contains only a placeholder comment. It does not remove a person or send a response, so a request to this route will remain pending. The completed implementation is in [final/11-methods.js](node-express-course/02-express-tutorial/final/11-methods.js):
+
+- Identify the resource with the URL parameter, for example `/api/people/1`; `req.params.id` is a string and is converted to a number for comparison.
+- Check that the person exists first. Return `404 Not Found` when no matching ID is found.
+- Remove the matching item by filtering it out of the array, then send a response such as `200 OK` with the updated list. Always finish the request with a response.
+- The tutorial removes data from an in-memory array only; a real database-backed DELETE handler should delete the record in the database and handle a missing record similarly.
+
+To test the completed example in Postman, run `node final/11-methods.js` from `node-express-course/02-express-tutorial` and send `DELETE http://localhost:5000/api/people/1`. No request body is needed.
 
 ### Middleware and request bodies
 

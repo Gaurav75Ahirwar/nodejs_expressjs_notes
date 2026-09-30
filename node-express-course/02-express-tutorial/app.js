@@ -47,6 +47,10 @@ app.put('/api/people/:id', (req, res) => {
     res.status(200).json({ success: true, data: newPeople });
 });
 
+app.delete('/api/people/:id', (req, res) => {
+    // filter out the array and remove the person
+});
+
 app.listen(5000, () => {
     console.log('Server is listening on port 5000...');
 });
