@@ -323,7 +323,7 @@ This project demonstrates the pattern clearly:
 - `authorize.js` checks the request query and allows or denies access.
 - `app.js` uses `app.use([logger, authorize])` so those checks run automatically before route logic.
 
-## Express GET and POST requests
+## Express GET, POST, and PUT requests
 
 ### GET: read data
 
@@ -334,6 +334,17 @@ A GET route returns a resource or collection to the client. In a database-backed
 A POST route receives new data in the request body, validates it, creates a record, and usually responds with status `201 Created`. In the Task Manager API, `POST /api/v1/tasks` calls `Task.create(req.body)`. The body parser must run before the route so Express can populate `req.body`.
 
 The earlier [HTTP methods example](node-express-course/02-express-tutorial/final/11-methods.js) uses a local `people` array, not a database. Its `/api/people` route responds with the submitted name but does not add it to the array; `/api/postman/people` returns a new array in its response without saving it. Use the Task Manager example for a database-backed create/read flow.
+
+### PUT: update an existing resource
+
+The [methods tutorial app](node-express-course/02-express-tutorial/app.js) defines `PUT /api/people/:id` to update a person's name:
+
+- Put the resource ID in the URL, such as `/api/people/1`; Express exposes it as `req.params.id` (a string), so the example converts it to a number before comparing IDs.
+- Send the changed fields in the request body. This route reads `name` from `req.body`, which is available because `express.json()` and `express.urlencoded()` are registered before the routes.
+- If the ID does not match a person, the route returns `404 Not Found`; if it matches, it returns `200 OK` with the people list.
+- This example changes only the `name` field and operates on the in-memory `people` array, so it is not a persistent database update. It also does not currently reject a missing `name`; production routes should validate required fields before updating.
+
+To try it in Postman, send `PUT http://localhost:5000/api/people/1`, choose Body > raw > JSON, and provide `{ "name": "Ada Lovelace" }`. The response should contain the updated people list. In HTTP APIs, PUT commonly represents replacing a resource; this tutorial route demonstrates updating a selected field instead.
 
 ### Middleware and request bodies
 
