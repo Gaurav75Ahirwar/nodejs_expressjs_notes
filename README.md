@@ -262,8 +262,8 @@ const logger = (req, res, next) => {
   next();
 };
 
-app.get('/', logger, (req, res) => {
-  res.send('Home');
+app.get("/", logger, (req, res) => {
+  res.send("Home");
 });
 ```
 
@@ -297,11 +297,11 @@ Here both middleware functions run before the route handler for matching request
 const authorize = (req, res, next) => {
   const { user } = req.query;
 
-  if (user === 'john') {
-    req.user = { name: 'john', id: 3 };
+  if (user === "john") {
+    req.user = { name: "john", id: 3 };
     next();
   } else {
-    res.status(401).send('<h1>Unauthorized</h1>');
+    res.status(401).send("<h1>Unauthorized</h1>");
   }
 };
 ```
@@ -322,6 +322,36 @@ This project demonstrates the pattern clearly:
 - `logger.js` logs the method, URL, and time.
 - `authorize.js` checks the request query and allows or denies access.
 - `app.js` uses `app.use([logger, authorize])` so those checks run automatically before route logic.
+
+## Express GET and POST requests
+
+### GET: read data
+
+A GET route returns a resource or collection to the client. In a database-backed app, the route handler queries the model and sends the result as JSON. For example, the Task Manager API handles `GET /api/v1/tasks` with `Task.find({})` and returns the tasks in its response. See the [task routes](node-express-course/03-task-manager/final/routes/tasks.js), [task controller](node-express-course/03-task-manager/final/controllers/tasks.js), and [application setup](node-express-course/03-task-manager/final/app.js).
+
+### POST: create data
+
+A POST route receives new data in the request body, validates it, creates a record, and usually responds with status `201 Created`. In the Task Manager API, `POST /api/v1/tasks` calls `Task.create(req.body)`. The body parser must run before the route so Express can populate `req.body`.
+
+The earlier [HTTP methods example](node-express-course/02-express-tutorial/final/11-methods.js) uses a local `people` array, not a database. Its `/api/people` route responds with the submitted name but does not add it to the array; `/api/postman/people` returns a new array in its response without saving it. Use the Task Manager example for a database-backed create/read flow.
+
+### Middleware and request bodies
+
+Middleware runs in registration order before a matching route handler. Register body parsers before routes:
+
+- `express.urlencoded({ extended: false })` parses form submissions encoded as `application/x-www-form-urlencoded`.
+- `express.json()` parses JSON request bodies, including the default body sent by Axios and Postman when using raw JSON.
+- `express.static(...)` serves the tutorial's HTML and browser JavaScript files.
+
+The [methods tutorial app](node-express-course/02-express-tutorial/app.js) demonstrates these parsers. If a parser is missing or registered after the routes, `req.body` may be undefined.
+
+### Send requests from the browser
+
+- **HTML form:** [index.html](node-express-course/02-express-tutorial/methods-public/index.html) submits a normal form with `method="POST"` to `/login`. Its named `name` input is sent as URL-encoded form data; the server reads it with `express.urlencoded()`. The browser navigates to the server's response.
+- **JavaScript with Axios:** [javascript.html](node-express-course/02-express-tutorial/methods-public/javascript.html) prevents the normal form submission, uses `axios.get('/api/people')` to read data, then `axios.post('/api/people', { name })` to send JSON without reloading the page. It displays the response and validation error in the page.
+- **Postman:** run `node final/11-methods.js` from `node-express-course/02-express-tutorial`, then send `POST http://localhost:5000/api/postman/people` with Body set to raw JSON, for example `{ "name": "Ada" }`. The endpoint validates the body and returns JSON; in this lesson it is still an in-memory demonstration, not a persistent database write.
+
+When testing a real database endpoint, start that API with its database configured, send `GET /api/v1/tasks` to read records, and send `POST /api/v1/tasks` with a JSON body such as `{ "name": "Read Express docs" }` to create a task.
 
 ## 9. Express route params and query strings
 
